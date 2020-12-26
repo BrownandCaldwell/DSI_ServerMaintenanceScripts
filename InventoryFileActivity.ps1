@@ -10,12 +10,13 @@ $inc = 100
 $objects = 0
 $bytes  = 0
 $errorFound = $false
+$connString = "DRIVER={SQL Server};Server=sqlaz.bc.com;Database=Branch2Cloud;IntegratedSecurity=Yes;"
 $start = Get-Date
 Write-Host $start
 
 #Add-OdbcDsn -Name "active" -DriverName "SQL Server Native Client 11.0" -DsnType "System" -SetPropertyValue @("Server=keydbsdev.bc.com", "Trusted_Connection=Yes", "Database=Branch2Cloud")
 $conn = New-Object System.Data.Odbc.OdbcConnection
-$conn.ConnectionString= "DRIVER={SQL Server};Server=sqlaz.bc.com;Database=Branch2Cloud;IntegratedSecurity=Yes;"
+$conn.ConnectionString= $connString
 $conn.open()
 
 $cmd = new-object System.Data.Odbc.OdbcCommand("DELETE FROM DigitalFileAssets WHERE [HostName] = '$hostName'" ,$conn)
@@ -23,8 +24,11 @@ $result = $cmd.ExecuteNonQuery()
 Write-Host "DELETE query result:" $result
 
 
-function Do-Inventory ($conn, $hostName, $thisPath, $inc){    
-    
+function Do-Inventory ($connString, $hostName, $thisPath, $inc){    
+    $conn = New-Object System.Data.Odbc.OdbcConnection
+    $conn.ConnectionString= $connString
+    $conn.open()    
+
     $table = $null
     $table = Get-ChildItem $thisPath -Recurse -Include @('*.*') | Select-Object  BaseName, Mode, Name, Length, DirectoryName, IsReadOnly, FullName, Extension, CreationTime, `
       CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc, Attributes, @{n='Owner'; e={(Get-Acl $_.FullName).Owner}}, @{N="HostName"; E={$hostName}} # -ErrorAction SilentlyContinue
@@ -60,18 +64,20 @@ function Do-Inventory ($conn, $hostName, $thisPath, $inc){
             Catch { 
                 $errorFound = $true 
                 Write-Host "ERROR RUNNING" $qry    
+                Write-Host $_
             }
-            Write-Host "        INSERT query result:" $result 
-            
+            #Write-Host "        INSERT query result:" $result 
         }
     }
+    $conn.close()
 }
 
 
 foreach($path in Get-ChildItem $basePath){
     $pathToProcess = (Join-Path $basePath $path) -replace "'","''"
     Write-Host "  " $pathToProcess
-    Do-Inventory $conn $hostName $pathToProcess $inc
+    #Do-Inventory $conn $hostName $pathToProcess $inc
+    Start-Job -ScriptBlock ${Function:Do-Inventory} -ArgumentList $connString, $hostName, $pathToProcess, $inc #| Wait-Job | Receive-Job
 }
 
 $end = Get-Date
@@ -79,11 +85,7 @@ $ts = New-TimeSpan -Start $start -End $end
 $seconds = $ts.Days * 86400.0 + $ts.Hours * 3600.0 + $ts.Minutes * 60.0 + $ts.Seconds * 1.0
 $qry = "INSERT INTO InventoryScriptResults ([HostName], [seconds], [bytes], [objects] [logfile]) VALUES ('$hostName', $seconds, $bytes, $objects, '$logFile')`n"
 #$cmd = new-object System.Data.Odbc.OdbcCommand($qry,$conn)
-Write-Host $qry
-    
-#Set-ODBC-Data $qry
+Write-Host $qry "`n`n"
 $conn.close()
 
-
-Write-Host "`n`n"
 Stop-Transcript
