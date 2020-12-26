@@ -1,5 +1,5 @@
-﻿#Write-Host "Scanning" $args[0]
-$basePath = "\\bc\corp\PW_Exports" # $args[0]
+﻿#$basePath = "\\bc\corp\PW_Exports" 
+$basePath = $args[0]
 $hostName = Split-Path -Path $basePath 
 #$hostName = $env:COMPUTERNAME
 $logFile = ($hostName -replace "\\", "_") + 'FileInventory.log'
@@ -7,14 +7,11 @@ Start-Transcript -Append -Path $logFile
 
 
 $inc = 100
-$objects = 0
-$bytes  = 0
 $errorFound = $false
 $connString = "DRIVER={SQL Server};Server=sqlaz.bc.com;Database=Branch2Cloud;IntegratedSecurity=Yes;"
 $start = Get-Date
-Write-Host $start
+Write-Host $start $basePath
 
-#Add-OdbcDsn -Name "active" -DriverName "SQL Server Native Client 11.0" -DsnType "System" -SetPropertyValue @("Server=keydbsdev.bc.com", "Trusted_Connection=Yes", "Database=Branch2Cloud")
 $conn = New-Object System.Data.Odbc.OdbcConnection
 $conn.ConnectionString= $connString
 $conn.open()
@@ -34,8 +31,8 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
       CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc, Attributes, @{n='Owner'; e={(Get-Acl $_.FullName).Owner}}, @{N="HostName"; E={$hostName}} # -ErrorAction SilentlyContinue
     if ($table -isnot [array]) {$table = @($table)}
     #Write-Host "    " $table.Length
+
     if ($table.Length -gt 0) {
-        $objects = $objects + $table.Length
         for($i=0; $i -le $table.Length; $i=$i+$inc){
 
             # Write-Host $i   
@@ -80,12 +77,25 @@ foreach($path in Get-ChildItem $basePath){
     Start-Job -ScriptBlock ${Function:Do-Inventory} -ArgumentList $connString, $hostName, $pathToProcess, $inc #| Wait-Job | Receive-Job
 }
 
+$jobs = Get-Job -State Running
+while ($jobs.Length -gt 0) {
+    Write-Host "Waiting on" $jobs.Length "jobs to finish"
+    Start-Sleep -Seconds 15.0
+    $jobs = Get-Job -State Running
+}
+
 $end = Get-Date
 $ts = New-TimeSpan -Start $start -End $end
+$errorFlag = 0
+if ($errorFound) {$errorFlag = 1}
 $seconds = $ts.Days * 86400.0 + $ts.Hours * 3600.0 + $ts.Minutes * 60.0 + $ts.Seconds * 1.0
-$qry = "INSERT INTO InventoryScriptResults ([HostName], [seconds], [bytes], [objects] [logfile]) VALUES ('$hostName', $seconds, $bytes, $objects, '$logFile')`n"
-#$cmd = new-object System.Data.Odbc.OdbcCommand($qry,$conn)
-Write-Host $qry "`n`n"
+$qry = "INSERT INTO InventoryScriptResults ([HostName], [seconds], [logfile], [Errors], [ExecutionTS]) VALUES ('$hostName', $seconds, '$logFile', $errorFlag, '$end')`n"
+#Write-Host $qry
+$cmd = new-object System.Data.Odbc.OdbcCommand($qry,$conn)
+$result = $cmd.ExecuteNonQuery()
 $conn.close()
+
+Write-Host "Done in $seconds seconds"
+if ($errorFound) {Write-Host "ERRORS FOUND, refer to log file"}
 
 Stop-Transcript
