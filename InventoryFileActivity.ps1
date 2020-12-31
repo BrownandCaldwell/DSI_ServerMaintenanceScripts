@@ -1,6 +1,7 @@
 ﻿#$basePath = "\\bc\corp\PW_Exports" 
 $basePath = $args[0]
-$hostName = Split-Path -Path $basePath 
+#$hostName = Split-Path -Path $basePath 
+$hostName = $basePath
 #$hostName = $env:COMPUTERNAME
 $logFile = ($hostName -replace "\\", "_") + 'FileInventory.log'
 Start-Transcript -Append -Path $logFile
@@ -46,7 +47,7 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
                 $file = $table[$i+$j]
                 #Write-Host "      " $file.FullName
                 if ($file -ne $null) {
-                    $fileParts = $file.Fullname.Split("\") | Select-Object -First 7
+                    $fileParts = $file.Fullname.Split("\") | Select-Object -Skip 2 -First 7
                     $qry = $qry + "    ( '{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}','{23}','{24}'),`n" `
                         -f $file.BaseName, $file.Mode, $file.Name, $file.Length, $file.DirectoryName, $file.IsReadOnly, $file.FullName, $file.Extension, $file.CreationTime, `
                          $file.CreationTimeUtc, $file.LastAccessTime, $file.LastAccessTimeUtc, $file.LastWriteTime, $file.LastWriteTimeUtc, $file.Attributes, $file.Owner, $file.HostName, $now, `
