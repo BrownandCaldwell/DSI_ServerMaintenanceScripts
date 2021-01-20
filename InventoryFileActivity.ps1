@@ -18,6 +18,7 @@ $conn.ConnectionString= $connString
 $conn.open()
 
 $cmd = new-object System.Data.Odbc.OdbcCommand("DELETE FROM DigitalFileAssets WHERE [HostName] = '$hostName'" ,$conn)
+$cmd.CommandTimeout = 900
 $result = $cmd.ExecuteNonQuery()
 Write-Host "DELETE query result:" $result
 
@@ -58,6 +59,7 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
             $qry = $qry.Substring(0,$qry.Length-2) + ';'
             #Write-Host $qry
             $cmd = new-object System.Data.Odbc.OdbcCommand($qry,$conn) 
+            $cmd.CommandTimeout = 900
             Try {$result = $cmd.ExecuteNonQuery() }
             Catch { 
                 $errorFound = $true 
@@ -78,11 +80,21 @@ foreach($path in Get-ChildItem $basePath){
     Start-Job -ScriptBlock ${Function:Do-Inventory} -ArgumentList $connString, $hostName, $pathToProcess, $inc #| Wait-Job | Receive-Job
 }
 
-$jobs = Get-Job -State Running
+$jobs = Get-Job
 while ($jobs.Length -gt 0) {
+    $remainingJobs = @()
+    foreach($job in $jobs) {
+        if ($job.Status -eq "Running") {
+            $remainingJobs += $job
+        }
+        else {
+            Receive-Job $job
+        }
+    }
+    $jobs = $remainingJobs
     Write-Host "Waiting on" $jobs.Length "jobs to finish"
     Start-Sleep -Seconds 15.0
-    $jobs = Get-Job -State Running
+    
 }
 
 $end = Get-Date
