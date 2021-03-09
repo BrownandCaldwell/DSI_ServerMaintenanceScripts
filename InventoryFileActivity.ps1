@@ -1,4 +1,4 @@
-﻿#$basePath = "\\bc\corp\PW_Exports" 
+﻿#$basePath = "\\bcslcfp01\Projects" 
 $basePath = $args[0]
 #$hostName = Split-Path -Path $basePath 
 $hostName = $basePath
@@ -29,10 +29,10 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
     $conn.open()    
 
     $table = $null
-    $table = Get-ChildItem $thisPath -Recurse -Include @('*.*') | Select-Object  BaseName, Mode, Name, Length, DirectoryName, IsReadOnly, FullName, Extension, CreationTime, `
+    $table = Get-ChildItem -LiteralPath $thisPath -Recurse -Force -Include @('*.*') | Select-Object  BaseName, Mode, Name, Length, DirectoryName, IsReadOnly, FullName, Extension, CreationTime, `
       CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc, Attributes, @{n='Owner'; e={(Get-Acl $_.FullName).Owner}}, @{N="HostName"; E={$hostName}} # -ErrorAction SilentlyContinue
     if ($table -isnot [array]) {$table = @($table)}
-    #Write-Host "    " $table.Length
+    Write-Host $thisPath $table.Length
 
     if ($table.Length -gt 0) {
         for($i=0; $i -le $table.Length; $i=$i+$inc){
@@ -48,11 +48,29 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
                 $file = $table[$i+$j]
                 #Write-Host "      " $file.FullName
                 if ($file -ne $null) {
-                    $fileParts = $file.Fullname.Split("\") | Select-Object -Skip 2 -First 7
-                    $qry = $qry + "    ( '{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}','{23}','{24}'),`n" `
-                        -f $file.BaseName, $file.Mode, $file.Name, $file.Length, $file.DirectoryName, $file.IsReadOnly, $file.FullName, $file.Extension, $file.CreationTime, `
-                         $file.CreationTimeUtc, $file.LastAccessTime, $file.LastAccessTimeUtc, $file.LastWriteTime, $file.LastWriteTimeUtc, $file.Attributes, $file.Owner, $file.HostName, $now, `
-                         $fileParts[0], $fileParts[1], $fileParts[2], $fileParts[3], $fileParts[4], $fileParts[5], $fileParts[6]
+                    $fileParts = $file.Fullname.Replace("'","''").Split("\") | Select-Object -Skip 2 -First 7
+                    $qry = $qry + "    ( "
+                    $qry = $qry + "'{0}'," -f $file.BaseName.Replace("'","''")
+                    $qry = $qry + "'{0}'," -f $file.Mode
+                    $qry = $qry + "'{0}'," -f $file.Name.Replace("'","''")
+                    $qry = $qry + "'{0}'," -f $file.Length
+                    if ($file.DirectoryName -ne $null) {$qry = $qry + "'{0}'," -f $file.DirectoryName.Replace("'","''") }
+                    else {$qry = $qry + "NULL,"}
+                    $qry = $qry + "'{0}'," -f $file.IsReadOnly
+                    $qry = $qry + "'{0}'," -f $file.FullName.Replace("'","''")
+                    $qry = $qry + "'{0}'," -f $file.Extension
+                    $qry = $qry + "'{0}'," -f $file.CreationTime
+                    $qry = $qry + "'{0}'," -f $file.CreationTimeUtc
+                    $qry = $qry + "'{0}'," -f $file.LastAccessTime
+                    $qry = $qry + "'{0}'," -f $file.LastAccessTimeUtc
+                    $qry = $qry + "'{0}'," -f $file.LastWriteTime
+                    $qry = $qry + "'{0}'," -f $file.LastWriteTimeUtc
+                    $qry = $qry + "'{0}'," -f $file.Attributes
+                    $qry = $qry + "'{0}'," -f $file.Owner
+                    $qry = $qry + "'{0}'," -f $file.HostName
+                    $qry = $qry + "'{0}'" -f $now
+                    for($k=0; $k -lt 7; $k++) {$qry = $qry + ",'{0}'" -f $fileParts[$k]}
+                    $qry = $qry + "),`n" 
                 }
             }
             
@@ -62,9 +80,9 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
             $cmd.CommandTimeout = 900
             Try {$result = $cmd.ExecuteNonQuery() }
             Catch { 
-                $errorFound = $true 
                 Write-Host "ERROR RUNNING" $qry    
                 Write-Host $_
+                $errorFound = $true
             }
             #Write-Host "        INSERT query result:" $result 
         }
@@ -74,9 +92,8 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
 
 
 foreach($path in Get-ChildItem $basePath){
-    $pathToProcess = (Join-Path $basePath $path) -replace "'","''"
-    Write-Host "  " $pathToProcess
-    #Do-Inventory $conn $hostName $pathToProcess $inc
+    $pathToProcess = (Join-Path $basePath $path)
+    #Do-Inventory $connString $hostName $pathToProcess $inc
     Start-Job -ScriptBlock ${Function:Do-Inventory} -ArgumentList $connString, $hostName, $pathToProcess, $inc #| Wait-Job | Receive-Job
 }
 
