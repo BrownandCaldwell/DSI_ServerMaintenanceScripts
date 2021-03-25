@@ -6,7 +6,7 @@ def write(name, trigger, action):
     task = template\
         .replace('<URI></URI>','<URI>{0}</URI>'.format(name))\
         .replace('<Triggers></Triggers>','<Triggers>{0}</Triggers>'.format(trigger))\
-        .replace('<Arguments></Arguments>','<Arguments>{0}</Arguments>'.format(name))
+        .replace('<Arguments></Arguments>','<Arguments>{0}</Arguments>'.format(action))
     with open(name.replace("\\","_")+".xml", 'w', encoding='utf-16') as outF: outF.write(task)
     
 triggers = {
@@ -51,11 +51,13 @@ rules = json.load(open('VM_Governance.json', encoding='utf-8'))
 for rule in rules['Applications']:
     process = rule['Check'].split(' ')[0]
     trigger = triggers[rule['Frequency']]
-    action = 'CleanProcess.ps1 {0} "{1}" "{2}" "{3}"'.format(process,rule['UserState'],rule['Action'],rule['Message'])
+    action = '.\CleanProcess.ps1 {0} "{1}" "{2}" "{3}"'.format(process,rule['UserState'],rule['Action'],rule['Message'])
     write(rule['Check'], trigger, action)
 
 for rule in rules['Directories']:
     directory = rule['Check'].split(' ')[0]
     trigger = triggers[rule['Frequency']]
-    action = 'CleanDirectory.ps1 "{0}" {1} {2} "{3}" "{4}"'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'],rule['Message'])
+    action = '.\CleanDirectory.ps1 "{0}" {1} {2} "{3}"'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'])
+    if 'Message' in rule: action += ' "{0}"'.format(rule['Message'])
     write(rule['Check'].replace("$each","subdir"), trigger, action)
+    
