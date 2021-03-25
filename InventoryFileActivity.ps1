@@ -1,13 +1,13 @@
-﻿#$basePath = "\\bcslcfp01\Projects" 
+﻿#$basePath = "\\bcvabfp01\Projects\GIS\Admin" 
 $basePath = $args[0]
 #$hostName = Split-Path -Path $basePath 
 $hostName = $basePath
 #$hostName = $env:COMPUTERNAME
-$logFile = ($hostName -replace "\\", "_") + 'FileInventory.log'
+$logFile = ($hostName -replace "\\", "_") + '_FileInventory.log'
 Start-Transcript -Append -Path $logFile
 
 
-$inc = 100
+$inc = 50
 $errorFound = $false
 $connString = "DRIVER={SQL Server};Server=sqlaz.bc.com;Database=Branch2Cloud;IntegratedSecurity=Yes;"
 $start = Get-Date
@@ -32,7 +32,7 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
     $table = Get-ChildItem -LiteralPath $thisPath -Recurse -Force -Include @('*.*') | Select-Object  BaseName, Mode, Name, Length, DirectoryName, IsReadOnly, FullName, Extension, CreationTime, `
       CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc, Attributes, @{n='Owner'; e={(Get-Acl $_.FullName).Owner}}, @{N="HostName"; E={$hostName}} # -ErrorAction SilentlyContinue
     if ($table -isnot [array]) {$table = @($table)}
-    Write-Host $thisPath $table.Length
+    Write-Host "Found" $thisPath "with" $table.Length "files/folders"
 
     if ($table.Length -gt 0) {
         for($i=0; $i -le $table.Length; $i=$i+$inc){
@@ -100,8 +100,9 @@ foreach($path in Get-ChildItem $basePath){
 $jobs = Get-Job
 while ($jobs.Length -gt 0) {
     $remainingJobs = @()
+
     foreach($job in $jobs) {
-        if ($job.Status -eq "Running") {
+        if ($job.State -eq "Running") {
             $remainingJobs += $job
         }
         else {
@@ -109,8 +110,8 @@ while ($jobs.Length -gt 0) {
         }
     }
     $jobs = $remainingJobs
-    Write-Host "Waiting on" $jobs.Length "jobs to finish"
-    Start-Sleep -Seconds 15.0
+    Write-Host "Waiting on" $jobs.Length "jobs to finish" (Get-Date)
+    Start-Sleep -Seconds 60.0
     
 }
 
