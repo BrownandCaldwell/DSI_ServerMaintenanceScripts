@@ -6,6 +6,10 @@ $message = $args[4]
 $size  = 0
 $limit = (Get-Date).AddDays($age)
 
+$hostName = hostname
+$logFile = "Clean out" + $dirToCLean + "_on_" + ($hostName -replace "\\", "_") + ".log"
+Start-Transcript -Append -Path $logFile
+
 function CleanPath($path, $notifyList){
     $size = (Get-ChildItem $path -Recurse -File | Measure-Object -Property Length -Sum -ErrorAction Continue).Sum/1000000000
     
@@ -30,7 +34,10 @@ if ($dirToCLean.ToLower().StartsWith("userprofile")) {
     $Users = Get-ChildItem C:\Users
     $Users | ForEach-Object {
         $path = Join-Path C:\Users $dirToClean.Replace("userprofile","$_")
-        CleanPath $path ($_.Name + "@brwncald.com")
+        
+        if (Test-Path -Path $path) {
+            CleanPath $path ($_.Name + "@brwncald.com")
+        }
     }
 }
 else {CleanPath $dirToClean "csomerlot@brwncald.com"}
