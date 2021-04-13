@@ -25,7 +25,7 @@ function CleanPath($path, $notifyList){
         }
         if ($action.ToLower().Contains("notify")) { 
             Write-Host "Sending email to $($_.Name)@brwncald.com: $message, action: $action"
-            Send-MailMessage -To  -From "noreply@brwncald.com"  -Subject "Folder $path on $hostname has grown too large, action taken: $action" -Body $message -Credential (Get-Credential) -SmtpServer "smtp.brwncald.com" -Port 587 
+            Send-MailMessage -To  -From "noreply@brwncald.com"  -Subject "Folder $path on $hostname has grown too large, action taken: $action" -Body $message -Credential (Get-Credential) -SmtpServer "smtp.brwncald.com"
         }
     }
 }
