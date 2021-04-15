@@ -11,7 +11,7 @@ def write(name, trigger, action):
     
 triggers = {
     'Weekly': '''    <CalendarTrigger>
-      <StartBoundary>2021-01-01T16:00:00</StartBoundary>
+      <StartBoundary>2021-01-01T13:00:00</StartBoundary>
       <Enabled>true</Enabled>
       <ScheduleByWeek>
         <DaysOfWeek>
@@ -22,7 +22,7 @@ triggers = {
     </CalendarTrigger>
     ''',
     'Daily' : '''    <CalendarTrigger>
-      <StartBoundary>2021-01-01T16:00:00</StartBoundary>
+      <StartBoundary>2021-01-01T01:00:00</StartBoundary>
       <Enabled>true</Enabled>
       <ScheduleByDay>
         <DaysInterval>1</DaysInterval>
@@ -35,7 +35,7 @@ triggers = {
         <Duration>P1D</Duration>
         <StopAtDurationEnd>true</StopAtDurationEnd>
       </Repetition>
-      <StartBoundary>2021-01-01T16:00:00</StartBoundary>
+      <StartBoundary>2021-01-01T00:00:00</StartBoundary>
       <ExecutionTimeLimit>PT2H</ExecutionTimeLimit>
       <Enabled>true</Enabled>
       <ScheduleByDay>
@@ -51,13 +51,13 @@ rules = json.load(open('VM_Governance.json', encoding='utf-8'))
 for rule in rules['Applications']:
     process = rule['Check'].split(' ')[0]
     trigger = triggers[rule['Frequency']]
-    action = '.\CleanProcess.ps1 {0} "{1}" "{2}" "{3}"'.format(process,rule['UserState'],rule['Action'],rule['Message'])
+    action = '.\CleanProcess.ps1 "\'{0}\'" {1} {2} {3}'.format(process,rule['UserState'],rule['Action'],rule['Message'])
     write(rule['Check'], trigger, action)
 
 for rule in rules['Directories']:
     directory = rule['Check'].split(' ')[0]
     trigger = triggers[rule['Frequency']]
-    action = '.\CleanDirectory.ps1 "{0}" {1} {2} "{3}"'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'])
-    if 'Message' in rule: action += ' "{0}"'.format(rule['Message'])
+    action = '.\CleanDirectory.ps1 "\'{0}\'" {1} {2} {3}'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'])
+    if 'Message' in rule: action += ' "\'{0}\'"'.format(rule['Message'])
     write(rule['Check'].replace("$each","subdir"), trigger, action)
     

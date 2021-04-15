@@ -24,7 +24,7 @@ foreach($i in $procSessions ) {
         $idleSessions += $proc
 
         if ($action.ToLower().Contains("notify")) {
-            Send-MailMessage -To ($cleanName + "@brwncald.com") -From "-csomerlot@brwncald.com"  -Subject "You left $procName running on $hostname" -Body $message -SmtpServer "smtp.brwncald.com"
+            Send-MailMessage -To ($cleanName + "@brwncald.com") -From "noreply@brwncald.com"  -Subject "You left $procName running on $hostname" -Body $message -SmtpServer "smtp.brwncald.com"
             Write-Host "Sent email to $cleanName@brwncald.com: You left $procName running on $hostName (process $proc). $message" 
         }
     }
