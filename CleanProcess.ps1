@@ -18,7 +18,7 @@ $idleSessions = @()
 foreach($i in $procSessions ) {
     $cleanName = $i.UserName.Replace("BC\","")
     $proc = $i.Id
-	Write-Host ($userState.ToLower()) ($rdpSessions[$cleanName].STATE.ToLower())
+	#Write-Host ($userState.ToLower()) ($rdpSessions[$cleanName].STATE.ToLower())
     if ($userState.ToLower().Contains($rdpSessions[$cleanName].STATE.ToLower())) {
         Write-Output $cleanName $i.Id
         $idleSessions += $proc

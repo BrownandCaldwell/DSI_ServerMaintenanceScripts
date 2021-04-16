@@ -51,7 +51,7 @@ rules = json.load(open('VM_Governance.json', encoding='utf-8'))
 for rule in rules['Applications']:
     process = rule['Check'].split(' ')[0]
     trigger = triggers[rule['Frequency']]
-    action = '.\CleanProcess.ps1 "\'{0}\'" {1} {2} {3}'.format(process,rule['UserState'],rule['Action'],rule['Message'])
+    action = '.\CleanProcess.ps1 {0} {1} "\'{2}\'" "\'{3}\'"'.format(process,rule['UserState'],rule['Action'],rule['Message'])
     write(rule['Check'], trigger, action)
 
 for rule in rules['Directories']:
