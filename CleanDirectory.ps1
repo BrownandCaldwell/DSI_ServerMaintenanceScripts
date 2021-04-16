@@ -3,7 +3,7 @@ $dirToCLean = $args[0].ToString()
 $age  = -$args[1] # in days
 $sizeLimit = $args[2] # in GB
 $action = $args[3]
-$message = $args[4].ToString().Replace("VM", $hostName).Replace("sizeLimit", $sizeLimit)
+$message = $args[4].ToString().Replace("VM", $hostName).Replace("sizeLimit", $sizeLimit)  + "`n`nThis email notification is still being tested. If you received it when  you shouldn't have, received too many, or have other questions, please forward it to Chris Somerlot"
 $size  = 0
 $limit = (Get-Date).AddDays($age)
 
