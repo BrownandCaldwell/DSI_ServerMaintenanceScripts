@@ -21,6 +21,17 @@ triggers = {
       </ScheduleByWeek>
     </CalendarTrigger>
     ''',
+    'Weekly2': '''    <CalendarTrigger>
+      <StartBoundary>2021-01-01T17:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByWeek>
+        <DaysOfWeek>
+          <Wednesday />
+        </DaysOfWeek>
+        <WeeksInterval>1</WeeksInterval>
+      </ScheduleByWeek>
+    </CalendarTrigger>
+    '''
     'Daily' : '''    <CalendarTrigger>
       <StartBoundary>2021-01-01T01:00:00</StartBoundary>
       <Enabled>true</Enabled>
@@ -51,13 +62,20 @@ rules = json.load(open('VM_Governance.json', encoding='utf-8'))
 for rule in rules['Applications']:
     process = rule['Check'].split(' ')[0]
     trigger = triggers[rule['Frequency']]
-    action = '.\CleanProcess.ps1 {0} {1} "\'{2}\'" "\'{3}\'"'.format(process,rule['UserState'],rule['Action'],rule['Message'])
+    message = rule['Message']
+    if "messageAddendum" in rules:
+        message += "\n\n" + rules["messageAddendum"]
+    action = '.\CleanProcess.ps1 {0} {1} "\'{2}\'" "\'{3}\'"'.format(process,rule['UserState'],rule['Action'],message)
     write(rule['Check'], trigger, action)
 
 for rule in rules['Directories']:
     directory = rule['Check'].split(' ')[0]
     trigger = triggers[rule['Frequency']]
     action = '.\CleanDirectory.ps1 "\'{0}\'" {1} {2} {3}'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'])
-    if 'Message' in rule: action += ' "\'{0}\'"'.format(rule['Message'])
+    if 'Message' in rule: 
+        message = rule['Message']
+        if "messageAddendum" in rules:
+            message += "\n\n" + rules["messageAddendum"]
+        action += ' "\'{0}\'"'.format(message)
     write(rule['Check'].replace("$each","subdir"), trigger, action)
     

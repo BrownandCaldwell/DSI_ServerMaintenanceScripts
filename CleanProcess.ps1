@@ -12,15 +12,37 @@ $action = $args[2]
 $message = $args[3] + "`n`nThis email notification is still being tested. If you received it when  you shouldn't have, received too many, or have other questions, please forward it to Chris Somerlot"
 
 $rdpSessions = Get-UserSessions
-$procSessions = Get-Process -IncludeUsername $procName
+try {
+    $procSessions = Get-Process -IncludeUsername $procName -ErrorAction Stop
+}
+catch {
+    Write-Host "No instances running"
+    exit
+}
 $idleSessions = @()
 
+$whitelist = $null
+if (Test-Path -Path .\whitelist.json -PathType leaf) {
+    $whitelist = @{}
+    $jsonObj = Get-Content -Raw -Path whitelist.json | ConvertFrom-Json
+    foreach($property in $jsonObj.PSObject.Properties) {
+        $whitelist[$property.Name] = $property.Value
+    }
+}
+
+
 foreach($i in $procSessions ) {
-    $cleanName = $i.UserName.Replace("BC\","")
+    $cleanName = $i.UserName.Replace("BC\","").ToLower()
+    if ($whitelist.ContainsKey($cleanName)) {
+        if ($whitelist[$cleanName].Contains($procName) ) {
+            Write-Host "Skipping this for" $cleanName
+            continue
+        }
+    }
     $proc = $i.Id
 	#Write-Host ($userState.ToLower()) ($rdpSessions[$cleanName].STATE.ToLower())
     if ($userState.ToLower().Contains($rdpSessions[$cleanName].STATE.ToLower())) {
-        Write-Output $cleanName $i.Id
+        #Write-Output $cleanName $i.Id
         $idleSessions += $proc
 
         if ($action.ToLower().Contains("notify")) {
