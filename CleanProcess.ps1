@@ -9,7 +9,7 @@ Start-Transcript -Append -Path $logFile
 $userState=$args[1]
 if ($userState.ToLower() -like "any") {$userState = "Disc;Active"}
 $action = $args[2]
-$message = $args[3] + "`n`nThis email notification is still being tested. If you received it when  you shouldn't have, received too many, or have other questions, please forward it to Chris Somerlot"
+$message = $args[3]
 
 $rdpSessions = Get-UserSessions
 try {

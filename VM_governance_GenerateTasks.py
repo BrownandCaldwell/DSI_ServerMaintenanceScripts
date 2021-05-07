@@ -31,7 +31,7 @@ triggers = {
         <WeeksInterval>1</WeeksInterval>
       </ScheduleByWeek>
     </CalendarTrigger>
-    '''
+    ''',
     'Daily' : '''    <CalendarTrigger>
       <StartBoundary>2021-01-01T01:00:00</StartBoundary>
       <Enabled>true</Enabled>
@@ -69,7 +69,7 @@ for rule in rules['Applications']:
     write(rule['Check'], trigger, action)
 
 for rule in rules['Directories']:
-    directory = rule['Check'].split(' ')[0]
+    directory = rule['Path']
     trigger = triggers[rule['Frequency']]
     action = '.\CleanDirectory.ps1 "\'{0}\'" {1} {2} {3}'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'])
     if 'Message' in rule: 
@@ -77,5 +77,5 @@ for rule in rules['Directories']:
         if "messageAddendum" in rules:
             message += "\n\n" + rules["messageAddendum"]
         action += ' "\'{0}\'"'.format(message)
-    write(rule['Check'].replace("$each","subdir"), trigger, action)
+    write(rule['Check'], trigger, action)
     

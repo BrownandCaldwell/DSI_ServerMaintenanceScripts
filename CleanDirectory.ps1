@@ -1,23 +1,27 @@
 ﻿$hostName = $env:COMPUTERNAME
 $dirToCLean = $args[0].ToString()
-$age  = -$args[1] # in days
+$age  = $args[1] # in days
 $sizeLimit = $args[2] # in GB
 $action = $args[3]
-$message = $args[4].ToString().Replace("VM", $hostName).Replace("sizeLimit", $sizeLimit)  + "`n`nThis email notification is still being tested. If you received it when  you shouldn't have, received too many, or have other questions, please forward it to Chris Somerlot"
+$message = $args[4].ToString().Replace("VM", $hostName).Replace("sizeLimit", $sizeLimit)
 $size  = 0
-$limit = (Get-Date).AddDays($age)
 
-$logFile = "Clean_out_" + $dirToCLean + "_on_" + ($hostName -replace "\\", "_") + ".log"
+$logFile = "Clean_out_" + ($dirToCLean -replace "\\", ".") + "_on_" + ($hostName -replace "\\", "_") + ".log"
 Start-Transcript -Append -Path $logFile
 
 function CleanPath($path, $notifyList){
     $size = (Get-ChildItem $path -Recurse -File | Measure-Object -Property Length -Sum -ErrorAction Continue).Sum/1000000000
-    
+    Write-Host $path $size
     if ($size -gt $sizeLimit) {
         Write-Host $size "GB in" $path
         if ($action.ToLower().Contains("delete")) {
             Write-Host "  Deleting content from" $path
-            $files = Get-ChildItem -Path $path -Recurse -File | Where-Object { ($_.LastWriteTime -lt $limit) } 
+            if ($age -eq "Any") {
+                $files = Get-ChildItem -Path $path -Recurse -File
+            }
+            else {
+                $files = Get-ChildItem -Path $path -Recurse -File | Where-Object { ($_.LastWriteTime -lt (Get-Date).AddDays(-$age)) } 
+            }
             foreach ($file in $files) {
                 Write-Host "    Deleting" $file
                 Remove-Item $file.FullName -Force -Recurse -ErrorAction Continue
@@ -36,6 +40,7 @@ if ($dirToCLean.ToLower().StartsWith("userprofile")) {
         $path = Join-Path C:\Users $dirToClean.Replace("userprofile","$_")
         
         if (Test-Path -Path $path) {
+            Write-Host $path
             CleanPath $path ($_.Name + "@brwncald.com")
         }
     }
