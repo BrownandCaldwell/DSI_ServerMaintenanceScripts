@@ -33,10 +33,12 @@ if (Test-Path -Path .\whitelist.json -PathType leaf) {
 
 foreach($i in $procSessions ) {
     $cleanName = $i.UserName.Replace("BC\","").ToLower()
-    if ($whitelist.ContainsKey($cleanName)) {
-        if ($whitelist[$cleanName].Contains($procName) ) {
-            Write-Host "Skipping this for" $cleanName
-            continue
+    if ($whitelist -ne $null) {
+        if ($whitelist.ContainsKey($cleanName)) {
+            if ($whitelist[$cleanName].Contains($procName) ) {
+                Write-Host "Skipping this for" $cleanName
+                continue
+            }
         }
     }
     $proc = $i.Id
