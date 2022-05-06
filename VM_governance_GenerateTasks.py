@@ -6,7 +6,7 @@ def write(name, trigger, action):
     task = template\
         .replace('<URI></URI>','<URI>{0}</URI>'.format(name))\
         .replace('<Triggers></Triggers>','<Triggers>{0}</Triggers>'.format(trigger))\
-        .replace('<Arguments></Arguments>','<Arguments>{0}</Arguments>'.format(action))
+        .replace('<args>','{0}'.format(action))
     with open(name.replace("\\","_")+".xml", 'w', encoding='utf-16') as outF: outF.write(task)
     
 triggers = {
@@ -64,14 +64,14 @@ for rule in rules['Applications']:
     trigger = triggers[rule['Frequency']]
     message = rule['Message']
     if "messageAddendum" in rules:
-        message += "\n\n" + rules["messageAddendum"]
-    action = '.\CleanProcess.ps1 {0} {1} "\'{2}\'" "\'{3}\'"'.format(process,rule['UserState'],rule['Action'],message)
+        message += "<br><br>" + rules["messageAddendum"]
+    action = '.\CleanProcess.ps1 {0} {1} "{2}" "{3}"'.format(process,rule['UserState'],rule['Action'],message)
     write(rule['Check'], trigger, action)
 
 for rule in rules['Directories']:
     directory = rule['Path']
     trigger = triggers[rule['Frequency']]
-    action = '.\CleanDirectory.ps1 "\'{0}\'" {1} {2} {3}'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'])
+    action = '.\CleanDirectory.ps1 "{0}" {1} {2} {3}'.format(directory,rule['Age'],rule['Size Limit GB'],rule['Action'])
     if 'Message' in rule: 
         message = rule['Message']
         if "messageAddendum" in rules:
