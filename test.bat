@@ -1,0 +1,1 @@
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe CleanProcess.ps1 Calculator Any "Notify,Kill" "<p>Your Calculator</p><br><p>is still running</p>"

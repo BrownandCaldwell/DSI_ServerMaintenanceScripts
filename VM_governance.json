@@ -1,0 +1,26 @@
+
+{ 
+	"Applications":
+	[
+		{
+			"Check": "Calculator left open but disconnected",
+			"UserState": "Any",
+			"Action": "Notify,Kill",
+			"Frequency": "Hourly",
+			"Message": "<p>Your Calculator session has been left open and and so we closed it for you.</p><p>You are welcome.</p>"
+		}
+	],
+   "Directories":	
+	[
+		{
+			"Check": "userprofile is greater than 10GB",
+            "Path": "userprofile",
+			"Size Limit GB": 10,
+			"Age": "Any",
+			"Action": "Notify",
+			"Frequency": "Hourly",
+			"Message": "Your profile on $VM is greater than $size GB, please clean out some files"
+		}
+	],
+    "messageAddendum": "<p>Note: when you log off of a VM, please don't just 'x' out (close) the VM/remote desktop window. To log off, please go to the Start menu, click on the icon of a person's head, and select Sign out. This will totally sign you out and close any software you have running. When you just close the VM window, all software you had running keeps running, including background software. This starts to slow things down when we have lots of users that don't sign out.</p>"
+}
