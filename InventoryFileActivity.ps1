@@ -1,15 +1,15 @@
-﻿#$basePath = "\\bcvabfp01\Projects\GIS\Admin" 
-$basePath = $args[0]
+﻿$basePath = "E:\OneDrive\BC\RiverRenew Program Management - Documents"
+#$basePath = $args[0]
 #$hostName = Split-Path -Path $basePath 
-$hostName = $basePath
-#$hostName = $env:COMPUTERNAME
+#$hostName = $basePath
+$hostName = $env:COMPUTERNAME
 $logFile = ($hostName -replace "\\", "_") + '_FileInventory.log'
 Start-Transcript -Append -Path $logFile
 
 
 $inc = 50
 $errorFound = $false
-$connString = "DRIVER={SQL Server};Server=sqlaz.bc.com;Database=Branch2Cloud;IntegratedSecurity=Yes;"
+$connString = "DRIVER={SQL Server};Server=AZR-SSDB02;Database=Branch2Cloud;IntegratedSecurity=Yes;"
 $start = Get-Date
 Write-Host $start $basePath
 
@@ -26,10 +26,10 @@ Write-Host "DELETE query result:" $result
 function Do-Inventory ($connString, $hostName, $thisPath, $inc){    
     $conn = New-Object System.Data.Odbc.OdbcConnection
     $conn.ConnectionString= $connString
-    $conn.open()    
+    $conn.open()
 
     $table = $null
-    $table = Get-ChildItem -LiteralPath $thisPath -Recurse -Force -Include @('*.*') | Select-Object  BaseName, Mode, Name, Length, DirectoryName, IsReadOnly, FullName, Extension, CreationTime, `
+    $table = Get-ChildItem -File -LiteralPath $thisPath -Recurse -Force -Include @('*.*') | Select-Object  BaseName, Mode, Name, Length, DirectoryName, IsReadOnly, FullName, Extension, CreationTime, `
       CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc, Attributes, @{n='Owner'; e={(Get-Acl $_.FullName).Owner}}, @{N="HostName"; E={$hostName}} # -ErrorAction SilentlyContinue
     if ($table -isnot [array]) {$table = @($table)}
     Write-Host "Found" $thisPath "with" $table.Length "files/folders"
@@ -37,9 +37,9 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
     if ($table.Length -gt 0) {
         for($i=0; $i -le $table.Length; $i=$i+$inc){
 
-            # Write-Host $i   
+            # Write-Host $i
 
-            $qry = "INSERT INTO DigitalFileAssets ([BaseName], [Mode], [FileName], [PathLength], [DirectoryName], [IsReadOnly], [FullName], [Extension], [CreationTime],  [CreationTimeUtc], [LastAccessTime], [LastAccessTimeUtc], [LastWriteTime], [LastWriteTimeUtc], [Attributes], [Owner], [Hostname], [inserted_dt], [folder1], [folder2], [folder3], [folder4], [folder5], [folder6], [folder7]) VALUES`n"
+            $qry = "INSERT INTO DigitalFileAssets ([BaseName], [Mode], [FileName], [PathLength], [DirectoryName], [IsReadOnly], [FullName], [Extension], [CreationTime],  [CreationTimeUtc], [LastAccessTime], [LastAccessTimeUtc], [LastWriteTime], [LastWriteTimeUtc], [Attributes], [Owner], [Hostname], [SHA256], [inserted_dt], [folder1], [folder2], [folder3], [folder4], [folder5], [folder6], [folder7]) VALUES`n"
             $now = Get-Date
     
             for($j=0; $j -lt $inc; $j++) {
@@ -68,6 +68,7 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
                     $qry = $qry + "'{0}'," -f $file.Attributes
                     $qry = $qry + "'{0}'," -f $file.Owner
                     $qry = $qry + "'{0}'," -f $file.HostName
+                    $qry = $qry + "NULL," #"'{0}'," -f (Get-FileHash -LiteralPath $file.FullName.Replace("'","''") -Algorithm SHA1) ## this is stupid slow
                     $qry = $qry + "'{0}'" -f $now
                     for($k=0; $k -lt 7; $k++) {$qry = $qry + ",'{0}'" -f $fileParts[$k]}
                     $qry = $qry + "),`n" 
@@ -93,6 +94,7 @@ function Do-Inventory ($connString, $hostName, $thisPath, $inc){
 
 foreach($path in Get-ChildItem $basePath){
     $pathToProcess = (Join-Path $basePath $path)
+    #Write-Debug $pathToProcess
     #Do-Inventory $connString $hostName $pathToProcess $inc
     Start-Job -ScriptBlock ${Function:Do-Inventory} -ArgumentList $connString, $hostName, $pathToProcess, $inc #| Wait-Job | Receive-Job
 }
